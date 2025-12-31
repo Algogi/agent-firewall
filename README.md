@@ -4,6 +4,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
+[![CI](https://github.com/Algogi/agent-firewall/workflows/CI/badge.svg)](https://github.com/Algogi/agent-firewall/actions/workflows/ci.yml)
+[![Security](https://github.com/Algogi/agent-firewall/workflows/Security/badge.svg)](https://github.com/Algogi/agent-firewall/actions/workflows/security.yml)
 
 ## What This Is
 
