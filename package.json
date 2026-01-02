@@ -2,9 +2,31 @@
   "name": "@algogi/agent-firewall",
   "version": "0.1.0",
   "description": "Deterministic prompt-injection firewall for LLM agents",
+  "keywords": [
+    "prompt-injection",
+    "security",
+    "llm",
+    "agent",
+    "firewall",
+    "deterministic"
+  ],
+  "homepage": "https://github.com/algogi/agent-firewall#readme",
+  "bugs": {
+    "url": "https://github.com/algogi/agent-firewall/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/algogi/agent-firewall.git"
+  },
+  "license": "MIT",
+  "author": "Algogi",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "type": "module",
+  "directories": {
+    "example": "examples",
+    "test": "tests"
+  },
   "files": [
     "dist",
     "README.md",
@@ -18,23 +40,6 @@
     "test:determinism": "vitest run --testNamePattern=determinism",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit"
-  },
-  "keywords": [
-    "prompt-injection",
-    "security",
-    "llm",
-    "agent",
-    "firewall",
-    "deterministic"
-  ],
-  "author": "Algogi",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/algogi/agent-firewall.git"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   },
   "dependencies": {
     "zod": "^3.22.4"
@@ -58,5 +63,8 @@
     "langgraph": {
       "optional": true
     }
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
