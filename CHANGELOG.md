@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-01-03
+
+### Added
+
+- Optional logger interface for receiving warnings:
+  - `Logger` interface with `warn(message: string)` method
+  - Optional `logger` parameter in `AgentFirewall` constructor
+  - Warnings for invalid environment variable values when logger is provided
+  - Logger documentation in README with usage examples
+
+### Changed
+
+- `ScoringEngine` constructor now accepts optional `logger` parameter
+- Invalid environment variable values now log warnings via logger (if provided)
+- Default behavior remains silent when no logger is provided (backward compatible)
+
 ## [0.2.0] - 2025-01-03
 
 ### Added

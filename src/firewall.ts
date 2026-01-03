@@ -45,7 +45,7 @@ export class AgentFirewall {
     this.scoringEngine = new ScoringEngine(config.logger);
     this.policy = config.policy;
     this.intelligenceProviders = config.intelligenceProviders ?? [];
-    this.version = config.version ?? '0.2.0';
+    this.version = config.version ?? '0.3.0';
   }
 
   /**
