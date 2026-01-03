@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-01-03
+
+### Added
+
+- Environment variable configuration for signal weights:
+  - `AGENT_FIREWALL_SIGNAL_WEIGHT_WITH_RULES` - Signal weight when rules are present (default: 0.2)
+  - `AGENT_FIREWALL_SIGNAL_WEIGHT_NO_RULES` - Signal weight when no rules exist (default: 1.0)
+  - `AGENT_FIREWALL_SIGNAL_CONFIDENCE_WEIGHT` - Signal contribution to confidence (default: 0.2)
+- Dynamic signal weight behavior: signals have full influence (100%) when no local rules are present
+- Validation for environment variable values (must be between 0.0 and 1.0)
+- Environment variable documentation in README
+
+### Changed
+
+- Scoring engine now uses configurable signal weights based on environment variables
+- Signal weights default to dynamic behavior (20% with rules, 100% without rules) for backward compatibility
+
 ## [0.1.0] - 2025-12-31
 
 ### Added

@@ -43,7 +43,7 @@ export class AgentFirewall {
     this.scoringEngine = new ScoringEngine();
     this.policy = config.policy;
     this.intelligenceProviders = config.intelligenceProviders ?? [];
-    this.version = config.version ?? '0.1.0';
+    this.version = config.version ?? '0.2.0';
   }
 
   /**

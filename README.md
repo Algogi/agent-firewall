@@ -273,6 +273,42 @@ const firewall = new AgentFirewall({
 - Any data retention
 - Any analytics
 
+## Environment Variables
+
+Signal weight behavior can be configured via environment variables:
+
+### Signal Weight Configuration
+
+- **`AGENT_FIREWALL_SIGNAL_WEIGHT_WITH_RULES`** (default: `0.2`)
+  - Maximum influence of intelligence signals when rules are present
+  - Range: `0.0` to `1.0`
+  - Example: `0.2` means signals contribute up to 20% of the risk score when rules exist
+
+- **`AGENT_FIREWALL_SIGNAL_WEIGHT_NO_RULES`** (default: `1.0`)
+  - Signal weight when no local rules are present
+  - Range: `0.0` to `1.0`
+  - Example: `1.0` means signals have full influence (100%) when no rules exist
+
+- **`AGENT_FIREWALL_SIGNAL_CONFIDENCE_WEIGHT`** (default: `0.2`)
+  - Signal contribution to confidence calculation
+  - Range: `0.0` to `1.0`
+  - Example: `0.2` means signals contribute up to 20% to confidence scores
+
+### Example Usage
+
+```bash
+# Use 30% signal weight when rules exist
+export AGENT_FIREWALL_SIGNAL_WEIGHT_WITH_RULES=0.3
+
+# Use 50% signal weight when no rules (instead of 100%)
+export AGENT_FIREWALL_SIGNAL_WEIGHT_NO_RULES=0.5
+
+# Increase signal contribution to confidence to 40%
+export AGENT_FIREWALL_SIGNAL_CONFIDENCE_WEIGHT=0.4
+```
+
+**Note:** Invalid values will log a warning and use the default. Values outside the `[0.0, 1.0]` range will throw an error at initialization.
+
 ## Privacy Guarantees
 
 - **No telemetry**: Zero data sent to external services by default
