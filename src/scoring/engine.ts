@@ -6,13 +6,84 @@ import type { RuleEvidence, Signal } from '../schemas/index.js';
  * Aggregates rule effects and intelligence signals into a final risk score.
  * 
  * Rules are additive. Intelligence signals are bounded and advisory only.
+ * If no rules are present, signals have full influence (100%).
+ * 
+ * Signal weights can be configured via environment variables:
+ * - AGENT_FIREWALL_SIGNAL_WEIGHT_WITH_RULES (default: 0.2) - signal weight when rules exist
+ * - AGENT_FIREWALL_SIGNAL_WEIGHT_NO_RULES (default: 1.0) - signal weight when no rules exist
+ * - AGENT_FIREWALL_SIGNAL_CONFIDENCE_WEIGHT (default: 0.2) - signal contribution to confidence
  */
 export class ScoringEngine {
   /**
-   * Maximum influence of intelligence signals on the final score.
-   * Signals can adjust confidence but are capped in score impact.
+   * Maximum influence of intelligence signals when rules are present.
+   * Configurable via AGENT_FIREWALL_SIGNAL_WEIGHT_WITH_RULES env var.
+   * Default: 0.2 (20% max influence when rules exist)
    */
-  private readonly maxSignalWeight = 0.2; // 20% max influence
+  private readonly maxSignalWeightWithRules: number;
+
+  /**
+   * Signal weight when no rules are present.
+   * Configurable via AGENT_FIREWALL_SIGNAL_WEIGHT_NO_RULES env var.
+   * Default: 1.0 (100% influence when no rules exist)
+   */
+  private readonly signalWeightNoRules: number;
+
+  /**
+   * Signal contribution to confidence calculation.
+   * Configurable via AGENT_FIREWALL_SIGNAL_CONFIDENCE_WEIGHT env var.
+   * Default: 0.2 (20% contribution to confidence)
+   */
+  private readonly signalConfidenceWeight: number;
+
+  constructor() {
+    // Read signal weights from environment variables with defaults
+    this.maxSignalWeightWithRules = this.parseEnvFloat(
+      'AGENT_FIREWALL_SIGNAL_WEIGHT_WITH_RULES',
+      0.2
+    );
+    this.signalWeightNoRules = this.parseEnvFloat(
+      'AGENT_FIREWALL_SIGNAL_WEIGHT_NO_RULES',
+      1.0
+    );
+    this.signalConfidenceWeight = this.parseEnvFloat(
+      'AGENT_FIREWALL_SIGNAL_CONFIDENCE_WEIGHT',
+      0.2
+    );
+
+    // Validate ranges
+    this.validateWeight('maxSignalWeightWithRules', this.maxSignalWeightWithRules, 0, 1);
+    this.validateWeight('signalWeightNoRules', this.signalWeightNoRules, 0, 1);
+    this.validateWeight('signalConfidenceWeight', this.signalConfidenceWeight, 0, 1);
+  }
+
+  /**
+   * Parse a float from environment variable with default fallback.
+   */
+  private parseEnvFloat(envVar: string, defaultValue: number): number {
+    const value = process.env[envVar];
+    if (value === undefined) {
+      return defaultValue;
+    }
+    const parsed = parseFloat(value);
+    if (isNaN(parsed)) {
+      console.warn(
+        `Invalid value for ${envVar}: "${value}". Using default: ${defaultValue}`
+      );
+      return defaultValue;
+    }
+    return parsed;
+  }
+
+  /**
+   * Validate that a weight is within valid range [0, 1].
+   */
+  private validateWeight(name: string, value: number, min: number, max: number): void {
+    if (value < min || value > max) {
+      throw new Error(
+        `${name} must be between ${min} and ${max}, got ${value}`
+      );
+    }
+  }
 
   /**
    * Calculate the final risk score from rule evidence and optional signals.
@@ -28,14 +99,20 @@ export class ScoringEngine {
     // Step 1: Aggregate rule scores (additive)
     const ruleScore = this.aggregateRuleScores(evidence);
 
-    // Step 2: Apply intelligence signals (bounded)
-    const signalAdjustment = this.calculateSignalAdjustment(signals);
+    // Step 2: Determine if rules are present
+    const hasRules = evidence.length > 0;
+    
+    // Step 3: Apply intelligence signals (bounded if rules exist, full if no rules)
+    const signalAdjustment = this.calculateSignalAdjustment(signals, hasRules);
 
-    // Step 3: Combine with bounded signal influence
-    const riskScore = Math.min(1.0, ruleScore + signalAdjustment);
+    // Step 4: Combine scores
+    // If no rules, use signal score directly; otherwise add to rule score
+    const riskScore = hasRules
+      ? Math.min(1.0, ruleScore + signalAdjustment)
+      : signalAdjustment;
 
-    // Step 4: Calculate confidence
-    const confidence = this.calculateConfidence(evidence, signals);
+    // Step 5: Calculate confidence
+    const confidence = this.calculateConfidence(evidence, signals, hasRules);
 
     return {
       riskScore: Math.max(0.0, Math.min(1.0, riskScore)),
@@ -61,10 +138,11 @@ export class ScoringEngine {
   }
 
   /**
-   * Calculate signal adjustment with bounded influence.
-   * Signals can only adjust the score within the maxSignalWeight limit.
+   * Calculate signal adjustment with dynamic influence.
+   * If no rules are present, signals have full influence (100%).
+   * If rules are present, signals are bounded to maxSignalWeightWithRules (20%).
    */
-  private calculateSignalAdjustment(signals: Signal[]): number {
+  private calculateSignalAdjustment(signals: Signal[], hasRules: boolean): number {
     if (signals.length === 0) {
       return 0.0;
     }
@@ -84,8 +162,9 @@ export class ScoringEngine {
 
     const avgNovelty = weightedNovelty / totalConfidence;
 
-    // Apply bounded adjustment (signals can only influence up to maxSignalWeight)
-    return avgNovelty * this.maxSignalWeight;
+    // Apply dynamic weight: configurable weight based on whether rules exist
+    const signalWeight = hasRules ? this.maxSignalWeightWithRules : this.signalWeightNoRules;
+    return avgNovelty * signalWeight;
   }
 
   /**
@@ -95,16 +174,37 @@ export class ScoringEngine {
    * - Number of matched rules (more rules = higher confidence)
    * - Rule severity distribution
    * - Intelligence signal confidence (if available)
+   * - If no rules, confidence comes primarily from signals
    */
   private calculateConfidence(
     evidence: RuleEvidence[],
-    signals: Signal[]
+    signals: Signal[],
+    hasRules: boolean
   ): number {
     const matchedRules = evidence.filter((ev) => ev.matched);
 
+    if (!hasRules) {
+      // No rules present - confidence comes from signals
+      if (signals.length === 0) {
+        return 0.3; // Low confidence if no rules and no signals
+      }
+      
+      // Use signal confidence directly (weighted average)
+      const avgSignalConfidence =
+        signals.reduce((sum, s) => sum + s.confidence, 0) / signals.length;
+      return Math.min(1.0, avgSignalConfidence);
+    }
+
+    // Rules are present
     if (matchedRules.length === 0) {
-      // Low confidence if no rules matched
-      return 0.3;
+      // Rules exist but none matched - low confidence
+      let signalConfidence = 0.0;
+      if (signals.length > 0) {
+        const avgSignalConfidence =
+          signals.reduce((sum, s) => sum + s.confidence, 0) / signals.length;
+        signalConfidence = avgSignalConfidence * this.signalConfidenceWeight;
+      }
+      return Math.min(1.0, 0.3 + signalConfidence);
     }
 
     // Base confidence from rule count (more rules = higher confidence)
@@ -121,7 +221,7 @@ export class ScoringEngine {
     if (signals.length > 0) {
       const avgSignalConfidence =
         signals.reduce((sum, s) => sum + s.confidence, 0) / signals.length;
-      signalConfidence = avgSignalConfidence * 0.2; // Signals contribute up to 20%
+      signalConfidence = avgSignalConfidence * this.signalConfidenceWeight;
     }
 
     return Math.min(1.0, ruleConfidence + severityBoost + signalConfidence);
