@@ -60,20 +60,46 @@ This directory contains GitHub Actions workflows for continuous integration, sec
 1. Type check and lint
 2. Build and test
 3. Verify version matches tag
-4. Publish to npm (requires `NPM_TOKEN` secret)
+4. Publish to npm using **trusted publishing (OIDC)** - no tokens required
 5. Create GitHub release (if manual dispatch)
 
-**Purpose:** Automated npm publishing with validation.
+**Purpose:** Automated npm publishing with validation using secure OIDC authentication.
 
-## Required Secrets
+**Authentication:** This workflow uses npm's trusted publishing feature, which uses OIDC (OpenID Connect) tokens instead of long-lived npm tokens. This is more secure as it uses short-lived, workflow-specific credentials.
 
-### For Releases
+## Required Configuration
 
-- `NPM_TOKEN` - npm authentication token with publish permissions
-  - **Must be configured in GitHub repository settings** (Settings → Secrets and variables → Actions)
-  - Generate at: https://www.npmjs.com/settings/[username]/tokens
-  - Required scope: `publish`
-  - The token is used by `setup-node@v4` to authenticate with npm during the release workflow
+### For Releases - Trusted Publishing Setup
+
+This project uses **npm trusted publishing** with OIDC, which is more secure than traditional tokens. No GitHub secrets are required for publishing.
+
+**To set up trusted publishing:**
+
+1. **Configure on npmjs.com:**
+   - Go to your package page on npmjs.com (e.g., `https://www.npmjs.com/package/@algogi/agent-firewall`)
+   - Navigate to **Settings** → **Trusted Publishers**
+   - Click **Add Trusted Publisher**
+   - Select **GitHub Actions** as the provider
+   - Configure the following:
+     - **Repository:** `Algogi/agent-firewall` (or your repository name)
+     - **Workflow file:** `release.yml` (must match exactly, including `.yml` extension)
+     - **Environment name:** (optional, leave blank unless using GitHub environments)
+   - Click **Save**
+
+2. **Workflow Configuration:**
+   - The workflow already has `id-token: write` permission (required for OIDC)
+   - The workflow uses `setup-node@v4` with `registry-url: 'https://registry.npmjs.org'`
+   - No `NODE_AUTH_TOKEN` or secrets are needed
+
+**Benefits of Trusted Publishing:**
+- ✅ More secure: Uses short-lived, workflow-specific credentials
+- ✅ Automatic provenance generation for public packages
+- ✅ No token management: No need to store or rotate long-lived tokens
+- ✅ Eliminates risk of token exposure in logs or configuration files
+
+**Note:** If you need to install private npm dependencies during the build, you may still need a read-only token for `npm ci`. However, publishing uses OIDC and requires no tokens.
+
+For more information, see: [npm Trusted Publishing Documentation](https://docs.npmjs.com/trusted-publishers)
 
 ## Workflow Status Badges
 
@@ -118,8 +144,26 @@ Configuration: `.github/dependabot.yml`
 
 ### Release Fails
 
-1. Verify `NPM_TOKEN` secret is configured in GitHub repository settings (Settings → Secrets and variables → Actions)
-2. Ensure the token has `publish` scope permissions on npm
-3. Check version matches package.json
-4. If you see `ENEEDAUTH` errors, verify the token is correctly set and has the required permissions
+1. **Trusted Publisher Configuration:**
+   - Verify trusted publisher is configured on npmjs.com (Settings → Trusted Publishers)
+   - Ensure repository name matches exactly (case-sensitive)
+   - Ensure workflow filename matches exactly: `release.yml` (including `.yml` extension)
+   - Verify you're using GitHub-hosted runners (self-hosted runners are not supported)
+
+2. **Workflow Permissions:**
+   - Verify `id-token: write` permission is set in the workflow (already configured)
+   - Ensure `registry-url: 'https://registry.npmjs.org'` is set in setup-node step
+
+3. **Version Verification:**
+   - Check version matches package.json
+   - Ensure semantic versioning is followed
+
+4. **Authentication Errors:**
+   - If you see `ENEEDAUTH` errors, verify trusted publisher configuration on npmjs.com
+   - Double-check that repository name and workflow filename match exactly
+   - Ensure the workflow file exists in `.github/workflows/` directory
+
+5. **For Private Dependencies:**
+   - If `npm ci` fails with authentication errors for private packages, you may need a read-only token
+   - Add `NODE_AUTH_TOKEN: ${{ secrets.NPM_READ_TOKEN }}` to the `npm ci` step only (not for publish)
 
