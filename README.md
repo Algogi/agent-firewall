@@ -92,7 +92,6 @@ This library does **not** protect against:
 │                                                             │
 │   Signals are:                                              │
 │   • Advisory only (never override rules)                   │
-│   • Bounded influence (max 20% of final score)             │
 │   • Discardable on failure (fail open)                     │
 │   • Probabilistic metadata (not decisions)                 │
 └──────────────────────┬──────────────────────────────────────┘
@@ -473,4 +472,5 @@ MIT License. See LICENSE file for details.
 ---
 
 **Built with trust, transparency, and determinism.**
+
 
