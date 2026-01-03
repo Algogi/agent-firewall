@@ -58,6 +58,7 @@ export class ScoringEngine {
 
   /**
    * Parse a float from environment variable with default fallback.
+   * Invalid values silently fall back to default.
    */
   private parseEnvFloat(envVar: string, defaultValue: number): number {
     const value = process.env[envVar];
@@ -66,9 +67,7 @@ export class ScoringEngine {
     }
     const parsed = parseFloat(value);
     if (isNaN(parsed)) {
-      console.warn(
-        `Invalid value for ${envVar}: "${value}". Using default: ${defaultValue}`
-      );
+      // Invalid value - silently use default
       return defaultValue;
     }
     return parsed;
