@@ -1,6 +1,6 @@
 {
   "name": "@algogi/agent-firewall",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Deterministic prompt-injection firewall for LLM agents",
   "keywords": [
     "prompt-injection",
