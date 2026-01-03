@@ -1,4 +1,5 @@
 import type { RuleEvidence, Signal } from '../schemas/index.js';
+import type { Logger } from '../interfaces/logger.js';
 
 /**
  * Scoring Engine
@@ -35,7 +36,13 @@ export class ScoringEngine {
    */
   private readonly signalConfidenceWeight: number;
 
-  constructor() {
+  /**
+   * Optional logger for warnings.
+   */
+  private readonly logger?: Logger;
+
+  constructor(logger?: Logger) {
+    this.logger = logger;
     // Read signal weights from environment variables with defaults
     this.maxSignalWeightWithRules = this.parseEnvFloat(
       'AGENT_FIREWALL_SIGNAL_WEIGHT_WITH_RULES',
@@ -58,7 +65,7 @@ export class ScoringEngine {
 
   /**
    * Parse a float from environment variable with default fallback.
-   * Invalid values silently fall back to default.
+   * Invalid values fall back to default and log a warning if logger is provided.
    */
   private parseEnvFloat(envVar: string, defaultValue: number): number {
     const value = process.env[envVar];
@@ -67,7 +74,12 @@ export class ScoringEngine {
     }
     const parsed = parseFloat(value);
     if (isNaN(parsed)) {
-      // Invalid value - silently use default
+      // Invalid value - use default and warn if logger provided
+      if (this.logger) {
+        this.logger.warn(
+          `Invalid value for ${envVar}: "${value}". Using default: ${defaultValue}`
+        );
+      }
       return defaultValue;
     }
     return parsed;

@@ -37,6 +37,7 @@ export * from './schemas/index.js';
 export * from './interfaces/rule.js';
 export * from './interfaces/policy.js';
 export * from './interfaces/intelligence.js';
+export * from './interfaces/logger.js';
 
 // Utilities
 export { MetadataComputer } from './utils/metadata.js';

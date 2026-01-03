@@ -307,7 +307,55 @@ export AGENT_FIREWALL_SIGNAL_WEIGHT_NO_RULES=0.5
 export AGENT_FIREWALL_SIGNAL_CONFIDENCE_WEIGHT=0.4
 ```
 
-**Note:** Invalid values will log a warning and use the default. Values outside the `[0.0, 1.0]` range will throw an error at initialization.
+**Note:** Invalid values will use the default silently unless a logger is provided. Values outside the `[0.0, 1.0]` range will throw an error at initialization.
+
+## Logger Interface
+
+The firewall supports an optional logger interface for receiving warnings about configuration issues (e.g., invalid environment variable values).
+
+### Logger Interface
+
+```typescript
+import type { Logger } from '@algogi/agent-firewall';
+
+interface Logger {
+  warn(message: string): void;
+}
+```
+
+### Usage with Custom Logger
+
+```typescript
+import { AgentFirewall, DefaultPolicy, RuleEngine, type Logger } from '@algogi/agent-firewall';
+
+// Implement your own logger
+const myLogger: Logger = {
+  warn(message: string) {
+    // Integrate with your logging system
+    console.warn(`[AgentFirewall] ${message}`);
+    // Or use winston, pino, etc.
+    // logger.warn(message);
+  },
+};
+
+// Pass logger to firewall
+const firewall = new AgentFirewall({
+  rules: new RuleEngine(),
+  policy: new DefaultPolicy(),
+  logger: myLogger, // Optional - defaults to silent
+});
+```
+
+### Default Behavior
+
+- **Without logger**: Warnings are silently ignored (backward compatible)
+- **With logger**: Warnings are sent to your logger implementation
+- **No dependencies**: Logger is a simple interface - use any logging library you prefer
+
+### When Warnings Are Emitted
+
+- Invalid environment variable values (non-numeric strings)
+- Configuration issues that fall back to defaults
 
 ## Privacy Guarantees
 

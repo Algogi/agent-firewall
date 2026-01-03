@@ -3,6 +3,7 @@ import { RuleEngine } from './rules/engine.js';
 import { ScoringEngine } from './scoring/engine.js';
 import type { Policy } from './interfaces/policy.js';
 import type { IntelligenceProvider } from './interfaces/intelligence.js';
+import type { Logger } from './interfaces/logger.js';
 import type {
   Context,
   Metadata,
@@ -37,10 +38,11 @@ export class AgentFirewall {
     policy: Policy;
     intelligenceProviders?: IntelligenceProvider[];
     version?: string;
+    logger?: Logger;
   }) {
     this.normalizer = new NormalizationPipeline();
     this.ruleEngine = config.rules ?? new RuleEngine();
-    this.scoringEngine = new ScoringEngine();
+    this.scoringEngine = new ScoringEngine(config.logger);
     this.policy = config.policy;
     this.intelligenceProviders = config.intelligenceProviders ?? [];
     this.version = config.version ?? '0.2.0';
