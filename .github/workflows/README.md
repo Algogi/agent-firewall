@@ -70,8 +70,10 @@ This directory contains GitHub Actions workflows for continuous integration, sec
 ### For Releases
 
 - `NPM_TOKEN` - npm authentication token with publish permissions
+  - **Must be configured in GitHub repository settings** (Settings → Secrets and variables → Actions)
   - Generate at: https://www.npmjs.com/settings/[username]/tokens
   - Required scope: `publish`
+  - The token is used by `setup-node@v4` to authenticate with npm during the release workflow
 
 ## Workflow Status Badges
 
@@ -116,7 +118,8 @@ Configuration: `.github/dependabot.yml`
 
 ### Release Fails
 
-1. Verify `NPM_TOKEN` is set correctly
-2. Check version matches package.json
-3. Ensure you have publish permissions on npm
+1. Verify `NPM_TOKEN` secret is configured in GitHub repository settings (Settings → Secrets and variables → Actions)
+2. Ensure the token has `publish` scope permissions on npm
+3. Check version matches package.json
+4. If you see `ENEEDAUTH` errors, verify the token is correctly set and has the required permissions
 
